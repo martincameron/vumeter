@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!-- Analogue VU Meter (c) 2019 mumart@gmail.com -->
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<script lang="Javascript">
+			function SprungMass( mass, spring, damping ) {
+				var x = 0, v = 0, a = 0;
+				// Model a sprung mass for the specified number of milliseconds.
+				this.model = function( force, xMin, xMax, millis ) {
+					for( var t = 0; t < millis; t++ ) {
+						if( x < xMin ) {
+							x = xMin;
+							if( v < 0 ) {
+								v = -v;
+							}
+						}
+						if( x > xMax ) {
+							x = xMax;
+							if( v > 0 ) {
+								v = -v;
+							}
+						}
+						a = ( force - spring * x - damping * v ) / mass; // Acceleration due to force.
+						v = v + a * 0.001; // Change in velocity due to acceleration.
+						x = x + v * 0.001; // Change in displacement due to velocity.
+					}
+					return x;
+				}
+			}
+			
+			function init() {
+				leftSpring = new SprungMass( 0.005, 1, 0.08 );
+				rightSpring = new SprungMass( 0.005, 1, 0.08 );
+				leftForce = 0;
+				rightForce = 0;
+				
+				canvas = document.getElementById("canvas");
+				context = canvas.getContext("2d");
+				
+				drawMeter( context, canvas.width / 2 );
+				background = context.getImageData( 0, 0, canvas.width / 2, canvas.width / 4 );
+				
+				time = performance.now();
+				requestAnimationFrame(repaint);
+				
+				navigator.mediaDevices.getUserMedia( { audio:true, video:false } ).then( openAudio );
+			}
+			
+			function openAudio( mediaStream ) {
+				var audioContext = new AudioContext();
+				var mediaStreamSource = audioContext.createMediaStreamSource( mediaStream );
+				var scriptProcessor = audioContext.createScriptProcessor( 1024, 2, 0 );
+				scriptProcessor.onaudioprocess = onAudioProcess;
+				mediaStreamSource.connect( scriptProcessor );
+			}
+			
+			function drawMeter( context, width ) {
+				// Draw background.
+				var gradient = context.createLinearGradient( 0, 0, 0, canvas.height );
+				gradient.addColorStop(0, '#CCAA55');
+				gradient.addColorStop(1, '#FFCC66');
+				context.fillStyle = gradient;
+				context.fillRect(0, 0, width, width / 2 );
+				// Draw bottom box.
+				context.fillStyle = 'black';
+				context.fillRect( width * 5 / 16, width * 6 / 16, width * 6 / 16, 1 );
+				context.fillRect( width * 5 / 16, width * 7 / 16, width * 6 / 16, 1 );
+				context.fillRect( width * 5 / 16, width * 6 / 16, 1, width / 16 );
+				context.fillRect( width * 11 / 16, width * 6 / 16, 1, width / 16 );
+				// Draw ruler.
+				var x = width / 16;
+				var y = width / 8;
+				var w = width * 14 / 16;
+				var h = width / 16;
+				var segmentWidth = w / 7;
+				// First black segment
+				context.fillRect( x, y, segmentWidth, h );
+				// Ruler segments
+				for( var n = x + segmentWidth; n < x + segmentWidth * 6; n += segmentWidth ){
+					context.fillRect( n, y, segmentWidth, 1 );
+					// Big marks
+					context.fillRect( n, y, 1, h );
+					// Small marks
+					if( segmentWidth >= 12 ) {
+						for( var v = 1; v < 6; v++ ) {
+							context.fillRect( n + segmentWidth * v / 6, y, 1, h / 2 );
+						}
+					}
+				}
+				// End red segment
+				context.fillStyle = '#AA0000';
+				context.fillRect( x + segmentWidth * 6, y, segmentWidth, h );
+			}
+			
+			function drawNeedle( context, x, width, deflection ) {
+				var angle = deflection * Math.PI / 2 - Math.PI / 4;
+				var x1 = width / 2 + width * 8 / 16 * Math.sin( angle );
+				var y1 = width * 9 / 16 - width * 8 / 16 * Math.cos( angle );
+				var x2 = width / 2 + width * 3 / 16 * Math.tan( angle );
+				var y2 = width * 3 / 8;
+				context.beginPath();
+				context.moveTo( x + x1, y1 );
+				context.lineTo( x + x2, y2 );
+				context.stroke();
+			}
+
+			function onAudioProcess( event ) {
+				leftForce = getForce( getMaxAmplitude( event.inputBuffer.getChannelData( 0 ) ) );
+				rightForce = getForce( getMaxAmplitude( event.inputBuffer.getChannelData( 1 ) ) );
+			}
+
+			function getForce( amplitude ) {
+				// 6DBA = 10 ^ 0.3 ~= 1.995
+				var force = Math.log( amplitude ) / Math.log( 1.995 ) + 8;
+				if( force < 0 ) {
+					force = 0;
+				}
+				return force / 8;
+			}
+
+			function getMaxAmplitude( audioBuf ) {
+				var maxAmp = 0;
+				for( var idx = 0, len = audioBuf.length; idx < len; idx++ ) {
+					var absAmp = Math.abs( audioBuf[ idx ] );
+					if( absAmp > maxAmp ) {
+						maxAmp = absAmp;
+					}
+				}
+				return maxAmp;
+			}
+
+			function repaint( millis ) {
+				var width = canvas.width / 2;
+				context.putImageData( background, 0, 0 );
+				drawNeedle( context, 0, width, leftSpring.model( leftForce, 0, 1, millis - time ) );
+				context.putImageData( background, width, 0 );
+				drawNeedle( context, width, width, rightSpring.model( rightForce, 0, 1, millis - time ) );
+				requestAnimationFrame( repaint );
+				time = millis;
+			}
+		</script>
+	</head>
+	<body style="background:black" onload="init()">
+		<canvas style="display:block;margin-left:auto;margin-right:auto;" id="canvas" width="640" height="160"></canvas>
+	</body>
+</html>
