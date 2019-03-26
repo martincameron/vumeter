@@ -52,7 +52,7 @@ public class VUMeter extends Canvas implements Runnable {
 		if( background == null ) {
 			foreground = createImage( width, width / 2 );
 			background = createImage( width / 2, width / 1 );
-			drawMeter( background.getGraphics(), width / 2, bgColour.darker(), bgColour, fgColour, peakColour );
+			drawMeter( background.getGraphics(), width / 2, bgColour.darker().darker(), bgColour, fgColour, peakColour );
 		}
 		Graphics graphics = foreground.getGraphics();
 		graphics.drawImage( background, 0, 0, null );

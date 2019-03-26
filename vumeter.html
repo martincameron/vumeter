@@ -58,7 +58,7 @@
 			function drawMeter( context, width ) {
 				// Draw background.
 				var gradient = context.createLinearGradient( 0, 0, 0, canvas.height );
-				gradient.addColorStop(0, '#CCAA55');
+				gradient.addColorStop(0, '#806633');
 				gradient.addColorStop(1, '#FFCC66');
 				context.fillStyle = gradient;
 				context.fillRect(0, 0, width, width / 2 );
@@ -73,7 +73,7 @@
 				var y = width / 8;
 				var w = width * 14 / 16;
 				var h = width / 16;
-				var segmentWidth = w / 7;
+				var segmentWidth = Math.round( w / 7 );
 				// First black segment
 				context.fillRect( x, y, segmentWidth, h );
 				// Ruler segments
@@ -84,7 +84,7 @@
 					// Small marks
 					if( segmentWidth >= 12 ) {
 						for( var v = 1; v < 6; v++ ) {
-							context.fillRect( n + segmentWidth * v / 6, y, 1, h / 2 );
+							context.fillRect( n + Math.round( segmentWidth * v / 6 ), y, 1, h / 2 );
 						}
 					}
 				}
