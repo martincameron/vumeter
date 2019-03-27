@@ -2,7 +2,7 @@
 #include "math.h"
 #include "SDL.h"
 
-static const char *VERSION = "VU Meter 20190326 (c) mumart@gmail.com";
+static const char *VERSION = "VU Meter 20190327 (c) mumart@gmail.com";
 
 static const int WIDTH = 800, HEIGHT = WIDTH / 4;
 
@@ -66,21 +66,26 @@ static float get_max_amplitude( Sint16 *audio_buf, int len, int channel ) {
 	return max_amp / 32768.0;
 }
 
-static void audio_callback( void *userdata, Uint8 *stream, int len ) {
+static Uint32 timer_callback( Uint32 interval, void *param ) {
 	SDL_Event event;
 	int now = SDL_GetTicks();
 	/* Update model, assuming callback is regularly called. */
 	model( &left_mass, left_force, 0, 1, now - time );
 	model( &right_mass, right_force, 0, 1, now - time );
 	time = now;
-	/* Calculate amplitude. */
-	left_force = get_force( get_max_amplitude( ( Sint16 * ) stream, len / 2, 0 ) );
-	right_force = get_force( get_max_amplitude( ( Sint16 * ) stream, len / 2, 1 ) );
 	/* Push redraw event. */
 	event.type = SDL_WINDOWEVENT;
 	event.user.code = 0;
 	event.user.data1 = event.user.data2 = NULL;
 	SDL_PushEvent( &event );
+	return interval;
+}
+
+static void audio_callback( void *userdata, Uint8 *stream, int len ) {
+//printf("dt=%d len=%d\n", now-time, len);
+	/* Calculate force on meter springs. */
+	left_force = get_force( get_max_amplitude( ( Sint16 * ) stream, len / 2, 0 ) );
+	right_force = get_force( get_max_amplitude( ( Sint16 * ) stream, len / 2, 1 ) );
 }
 
 static void draw_gradient( SDL_Renderer *renderer, Uint32 colour1, Uint32 colour2, int width, int height ) {
@@ -177,6 +182,7 @@ int main( int argc, char **argv ) {
 	struct SDL_Texture *target, *background = NULL;
 	SDL_AudioSpec audiospec = { 0 };
 	SDL_AudioDeviceID audiodev;
+	SDL_TimerID timer;
 	SDL_Event event;
 	/* Initialize SDL. */
 	if( SDL_Init( SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_TIMER ) == 0 ) {
@@ -208,24 +214,27 @@ int main( int argc, char **argv ) {
 					if( audiodev >= 0 ) {
 						SDL_PauseAudioDevice( audiodev, 0 );
 						time = SDL_GetTicks();
-						while( 1 ) {
-							SDL_WaitEvent( &event );
-							if( event.type == SDL_QUIT ) {
-exit( 0 );
-								SDL_CloseAudioDevice( audiodev );
-								break;
-							} else if( event.type == SDL_WINDOWEVENT ) {
-								/* Redraw. */
-								SDL_SetRenderTarget( renderer, target );
-								SDL_RenderCopy( renderer, background, NULL, NULL );
-								draw_needle( renderer, 0, WIDTH / 2, 0, left_mass.x );
-								draw_needle( renderer, WIDTH / 2, WIDTH / 2, 0, right_mass.x );
-								SDL_SetRenderTarget( renderer, NULL );
-								SDL_RenderCopy( renderer, target, NULL, NULL );
-								SDL_RenderPresent( renderer );
+						timer = SDL_AddTimer( 12, timer_callback, NULL );
+						if( timer ) {
+							while( 1 ) {
+								SDL_WaitEvent( &event );
+								if( event.type == SDL_QUIT ) {
+									exit( EXIT_SUCCESS );
+								} else if( event.type == SDL_WINDOWEVENT ) {
+									/* Redraw. */
+									SDL_SetRenderTarget( renderer, target );
+									SDL_RenderCopy( renderer, background, NULL, NULL );
+									draw_needle( renderer, 0, WIDTH / 2, 0, left_mass.x );
+									draw_needle( renderer, WIDTH / 2, WIDTH / 2, 0, right_mass.x );
+									SDL_SetRenderTarget( renderer, NULL );
+									SDL_RenderCopy( renderer, target, NULL, NULL );
+									SDL_RenderPresent( renderer );
+								}
 							}
+							exit_code = EXIT_SUCCESS;
+						} else {
+							fprintf( stderr, "Unable to start timer: %s\n", SDL_GetError() );
 						}
-						exit_code = EXIT_SUCCESS;
 					} else {
 						fprintf( stderr, "Unable to open audio device: %s\n", SDL_GetError() );
 					}
