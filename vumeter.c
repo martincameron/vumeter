@@ -2,7 +2,7 @@
 #include "math.h"
 #include "SDL.h"
 
-static const char *VERSION = "VU Meter 20190327 (c) mumart@gmail.com";
+static const char *VERSION = "VU Meter 20190328 (c) mumart@gmail.com";
 
 static const int WIDTH = 800, HEIGHT = WIDTH / 4;
 
@@ -14,7 +14,6 @@ struct sprung_mass {
 	float d; /* Damping coefficient. */
 	float x; /* Displacement. */
 	float v; /* Velocity. */
-	float a; /* Acceleration. */
 };
 
 static int time;
@@ -23,7 +22,7 @@ static struct sprung_mass left_mass = { 0.005, 1.0, 0.08, 1 }, right_mass = { 0.
 
 /* Apply the specified force to the sprung mass for the specified number of milliseconds. */
 static float model( struct sprung_mass *sm, float force, float x_min, float x_max, int millis ) {
-	int t;
+	int t, a;
 	for( t = 0; t < millis; t++ ) {
 		if( sm->x < x_min ) {
 			sm->x = x_min;
@@ -37,8 +36,8 @@ static float model( struct sprung_mass *sm, float force, float x_min, float x_ma
 				sm->v = -sm->v;
 			}
 		}
-		sm->a = ( force - sm->k * sm->x - sm->d * sm->v ) / sm->m; /* Acceleration due to force. */
-		sm->v = sm->v + sm->a * 0.001; /* Change in velocity due to acceleration. */
+		a = ( force - sm->k * sm->x - sm->d * sm->v ) / sm->m; /* Acceleration due to force. */
+		sm->v = sm->v + a * 0.001; /* Change in velocity due to acceleration. */
 		sm->x = sm->x + sm->v * 0.001; /* Change in displacement due to velocity. */
 	}
 	return sm->x;

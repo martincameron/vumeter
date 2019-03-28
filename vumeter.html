@@ -5,7 +5,7 @@
 		<meta charset="UTF-8">
 		<script lang="Javascript">
 			function SprungMass( mass, spring, damping ) {
-				var x = 0, v = 0, a = 0;
+				var x = 0, v = 0;
 				// Model a sprung mass for the specified number of milliseconds.
 				this.model = function( force, xMin, xMax, millis ) {
 					for( var t = 0; t < millis; t++ ) {
@@ -21,7 +21,7 @@
 								v = -v;
 							}
 						}
-						a = ( force - spring * x - damping * v ) / mass; // Acceleration due to force.
+						var a = ( force - spring * x - damping * v ) / mass; // Acceleration due to force.
 						v = v + a * 0.001; // Change in velocity due to acceleration.
 						x = x + v * 0.001; // Change in displacement due to velocity.
 					}

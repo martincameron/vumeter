@@ -7,7 +7,7 @@ package vumeter;
  * A simple numerical-integration with a dt of 1-millisecond is used.
  */
 public class DampedMassOnSpring {
-	private double x, v, a, m, k, d;
+	private double x, v, m, k, d;
 
 	/**
 	 * Construct a model for a driven damped mass on a spring.
@@ -28,7 +28,7 @@ public class DampedMassOnSpring {
 	 */
 	public final double model( double force, int millis ) {
 		for( int n = 0; n < millis; n++ ) {
-			a = ( force - k * x - d * v ) / m; // Acceleration due to force.
+			double a = ( force - k * x - d * v ) / m; // Acceleration due to force.
 			v = v + a * 0.001; // Change in velocity due to acceleration.
 			x = x + v * 0.001; // Change in displacement due to velocity.
 		}
@@ -51,7 +51,7 @@ public class DampedMassOnSpring {
 				x = lower;
 				v = -v;
 			}
-			a = ( force - k * x - d * v ) / m; // Acceleration due to force.
+			double a = ( force - k * x - d * v ) / m; // Acceleration due to force.
 			v = v + a * 0.001; // Change in velocity due to acceleration.
 			x = x + v * 0.001; // Change in displacement due to velocity.
 		}
