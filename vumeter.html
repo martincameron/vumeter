@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Analogue VU Meter (c) 2019 mumart@gmail.com -->
+<!-- Analogue VU Meter (c) 2020 mumart@gmail.com -->
 <html>
 	<head>
 		<meta charset="UTF-8">
@@ -112,11 +112,12 @@
 
 			function getForce( amplitude ) {
 				// 6DBA = 10 ^ 0.3 ~= 1.995
-				var force = Math.log( amplitude ) / Math.log( 1.995 ) + 8;
+				var force = ( Math.log( amplitude ) / Math.log( 1.995 ) + 7 ) / 7;
 				if( force < 0 ) {
 					force = 0;
 				}
-				return force / 8;
+				// Correct for straight ruler-marks.
+				return ( Math.atan( force * 2 - 1 ) * 4 / Math.PI + 1 ) / 2;
 			}
 
 			function getMaxAmplitude( audioBuf ) {

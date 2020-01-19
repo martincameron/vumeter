@@ -2,7 +2,7 @@
 #include "math.h"
 #include "SDL.h"
 
-static const char *VERSION = "VU Meter 20190328 (c) mumart@gmail.com";
+static const char *VERSION = "VU Meter 20200119 (c) mumart@gmail.com";
 
 static const int WIDTH = 800, HEIGHT = WIDTH / 4;
 
@@ -44,11 +44,12 @@ static float model( struct sprung_mass *sm, float force, float x_min, float x_ma
 }
 
 static float get_force( float amplitude ) {
-	float force = logf( amplitude ) / logf( SIX_DBA ) + 8;
+	float force = ( logf( amplitude ) / logf( SIX_DBA ) + 7 ) / 7;
 	if( force < 0 ) {
 		force = 0;
 	}
-	return force / 8;
+	/* Correct for straight ruler-marks. */
+	return ( atanf( force * 2 - 1 ) * M_1_PI * 4 + 1 ) / 2;
 }
 
 static float get_max_amplitude( Sint16 *audio_buf, int len, int channel ) {

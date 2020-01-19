@@ -12,7 +12,7 @@ import javax.sound.sampled.*;
  * The scale is roughly in DBa, with each large tick-mark representing approximately double the amplitude.
  */
 public class VUMeter extends Canvas implements Runnable {
-	public static final String VERSION = "VU Meter 20190318 (c) mumart@gmail.com" ;
+	public static final String VERSION = "VU Meter 20200119 (c) mumart@gmail.com";
 	private static final double SIX_DBA = Math.pow( 10, 0.3 );
 	
 	private Color bgColour, fgColour, peakColour;
@@ -104,11 +104,12 @@ public class VUMeter extends Canvas implements Runnable {
 	}
 	
 	public static double getForce( double amplitude ) {
-		double force = Math.log( amplitude ) / Math.log( SIX_DBA ) + 8;
+		double force = ( Math.log( amplitude ) / Math.log( SIX_DBA ) + 7 ) / 7;
 		if( force < 0 ) {
 			force = 0;
 		}
-		return force / 8;
+		// Correct for straight ruler-marks.
+		return ( Math.atan( force * 2 - 1 ) * 4 / Math.PI + 1 ) / 2;
 	}
 
 	public static double getMaxAmplitude( byte[] audioBuf, int channel ) {
