@@ -2,7 +2,7 @@
 #include "math.h"
 #include "SDL.h"
 
-static const char *VERSION = "VU Meter 20200119 (c) mumart@gmail.com";
+static const char *VERSION = "VU Meter 20200812 (c) mumart@gmail.com";
 
 static const int WIDTH = 800, HEIGHT = WIDTH / 4;
 
@@ -169,10 +169,31 @@ static void draw_needle( SDL_Renderer *renderer, int x, int width, Uint32 colour
 	SDL_RenderDrawLine( renderer, x + x1, y1, x + x2, y2 );
 }
 
-static void draw_meter( SDL_Renderer *renderer, Uint32 scale_colour, Uint32 peak_colour, int x, int width, int height ) {
+static void draw_meter( SDL_Renderer *renderer, Uint32 scale_colour, Uint32 peak_colour, int x, int width ) {
 	set_colour( renderer, scale_colour );
 	draw_rect( renderer, x + width * 5 / 16, width * 3 / 8, width * 6 / 16, width / 16 );
 	draw_ruler( renderer, x, width, scale_colour, peak_colour );
+}
+
+static void init_icon( SDL_Window *window ) {
+	SDL_Surface *surface;
+	SDL_Renderer *renderer;
+	surface = SDL_CreateRGBSurface( 0, 64, 32, 32, 0, 0, 0, 0 );
+	if( surface ) {
+		renderer = SDL_CreateSoftwareRenderer( surface );
+		if( renderer ) {
+			draw_gradient( renderer, 0x806633, 0xFFCC66, 64, 32 );
+			draw_meter( renderer, 0, 0xAA0000, 0, 64 );
+			draw_needle( renderer, 0, 64, 0, 0 );
+			SDL_SetWindowIcon( window, surface );
+			SDL_DestroyRenderer( renderer );
+		} else {
+			fprintf( stderr, "Unable to create renderer for window icon: %s\n", SDL_GetError() );
+		}
+		SDL_FreeSurface( surface );
+	} else {
+		fprintf( stderr, "Unable to create surface for window icon: %s\n", SDL_GetError() );
+	}
 }
 
 int main( int argc, char **argv ) {
@@ -189,6 +210,7 @@ int main( int argc, char **argv ) {
 		window = SDL_CreateWindow( VERSION,
 			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, 0 );
 		if( window ) {
+			init_icon( window );
 			renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_TARGETTEXTURE );
 			if( renderer ) {
 				target = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, WIDTH, HEIGHT );
@@ -201,8 +223,8 @@ int main( int argc, char **argv ) {
 					/* Draw background. */
 					SDL_SetRenderTarget( renderer, background );
 					draw_gradient( renderer, 0x806633, 0xFFCC66, WIDTH, HEIGHT );
-					draw_meter( renderer, 0, 0xAA0000, 0, WIDTH / 2, HEIGHT );
-					draw_meter( renderer, 0, 0xAA0000, WIDTH / 2, WIDTH / 2, HEIGHT );
+					draw_meter( renderer, 0, 0xAA0000, 0, WIDTH / 2 );
+					draw_meter( renderer, 0, 0xAA0000, WIDTH / 2, WIDTH / 2 );
 					SDL_RenderPresent( renderer );
 					/* Initialize audio. */
 					audiospec.freq = 48000;
